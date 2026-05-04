@@ -1,6 +1,12 @@
 ##Section 1 — File paths
 
 from pathlib import Path
+from dotenv import load_dotenv
+import os
+
+load_dotenv(Path(__file__).parent.parent / ".env")
+
+OPENTOPO_API_KEY = os.getenv("OPENTOPO_API_KEY")
 
 # root of the repo — two levels up from this file
 ROOT = Path(__file__).parent.parent

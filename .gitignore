@@ -1,41 +1,40 @@
-# Virtual environments
+# python environment
 daenen/
-venv/
-env/
-.venv/
-.env/
-
-# Python
 __pycache__/
-*.py[cod]
+*.pyc
 *.pyo
+.Python
 
-# Cache
+# data — raw graphs are large binary files
+data/raw/
+data/urban_atlas/
+
+# processed data — regeneratable from scripts
+data/processed/
+
 cache/
 
-# Data (raw files are downloaded via script)
-data/raw/
-data/processed/
-data/interim/
-
-# Outputs
-outputs/
+# results — regeneratable
 results/
-figures/
 
-# Jupyter
+# jupyter notebook checkpoints
 .ipynb_checkpoints/
-*.ipynb
 
-# Environment variables
+# rasterio / GDAL temp files
+*.tif
+*.tiff
+*.geotiff
+
+# environment variables and API keys — never commit these
 .env
 *.env
 
-# OS
-.DS_Store
+# VS Code settings
+.vscode/
+
+# Windows system files
 Thumbs.db
 desktop.ini
 
-# Editors
-.vscode/
-*.code-workspace
+# Mac system files
+.DS_Store
