@@ -1,0 +1,41 @@
+# Virtual environments
+daenen/
+venv/
+env/
+.venv/
+.env/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Cache
+cache/
+
+# Data (raw files are downloaded via script)
+data/raw/
+data/processed/
+data/interim/
+
+# Outputs
+outputs/
+results/
+figures/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Environment variables
+.env
+*.env
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors
+.vscode/
+*.code-workspace
