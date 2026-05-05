@@ -118,19 +118,40 @@ def compute_graph_metrics(G, patch_size_m):
 def main():
     PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
 
-    # load patch centres
+    # load all patch centres
     centres_path = PROCESSED_DIR / "patch_centres.csv"
     centres = pd.read_csv(centres_path)
     print(f"Loaded {len(centres)} patch centres\n")
 
-    all_rows = []
+    # load existing results if they exist
+    # skip patches already computed
+    output_path = PROCESSED_DIR / "graph_features.csv"
+    if output_path.exists():
+        existing = pd.read_csv(output_path)
+        existing_ids = set(existing['patch_id'].values)
+        print(f"Found {len(existing)} existing patches — skipping")
+        all_rows = existing.to_dict('records')
+    else:
+        existing_ids = set()
+        all_rows = []
+
     discarded = 0
 
     # process city by city
     for city in CITIES:
         city_patches = centres[centres['code'] == city['code']]
+
+        # skip patches already computed
+        city_patches = city_patches[
+            ~city_patches['patch_id'].isin(existing_ids)
+        ]
+
+        if len(city_patches) == 0:
+            print(f"{city['name']} — already done, skipping")
+            continue
+
         print(f"Processing {city['name']} "
-              f"— {len(city_patches)} centres...")
+              f"— {len(city_patches)} new centres...")
 
         # load cached city graph once per city
         graph_path = RAW_DIR / f"{city['code']}.graphml"
@@ -140,32 +161,28 @@ def main():
 
         G = ox.load_graphml(graph_path)
 
-        city_valid = 0
+        city_valid     = 0
         city_discarded = 0
 
         for _, row in tqdm(city_patches.iterrows(),
                            total=len(city_patches),
                            desc=f"  {city['code']}"):
 
-            # extract patch subgraph
             G_patch = get_patch_subgraph(
                 G, row['lat'], row['lon'], PATCH_SIZE_M
             )
 
-            # quality gate
             if not is_valid_patch(G_patch):
                 city_discarded += 1
                 discarded += 1
                 continue
 
-            # compute features
             metrics = compute_graph_metrics(G_patch, PATCH_SIZE_M)
             if metrics is None:
                 city_discarded += 1
                 discarded += 1
                 continue
 
-            # assemble row
             result = {
                 'patch_id': row['patch_id'],
                 'city':     row['city'],
@@ -177,7 +194,21 @@ def main():
             all_rows.append(result)
             city_valid += 1
 
-        print(f"  valid: {city_valid} · discarded: {city_discarded}\n")
+        print(f"  valid: {city_valid} · "
+              f"discarded: {city_discarded}\n")
+
+        # save after each city in case of interruption
+        df = pd.DataFrame(all_rows)
+        df.to_csv(output_path, index=False)
+        print(f"  progress saved — {len(df)} total patches so far")
+
+    # final save
+    df = pd.DataFrame(all_rows)
+    df.to_csv(output_path, index=False)
+
+    print(f"\nTotal valid patches: {len(df)}")
+    print(f"Total discarded:     {discarded}")
+    print(f"Saved to {output_path}")
 
     # save results
     df = pd.DataFrame(all_rows)

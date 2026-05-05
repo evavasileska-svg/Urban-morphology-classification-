@@ -109,7 +109,7 @@ def compute_entropy(G, num_bins=36):
 def main():
     PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
 
-    # load valid patches from graph features
+    # load valid patches
     graph_path = PROCESSED_DIR / "graph_features.csv"
     if not graph_path.exists():
         print("graph_features.csv not found")
@@ -119,19 +119,35 @@ def main():
     patches = pd.read_csv(graph_path)
     print(f"Loaded {len(patches)} valid patches\n")
 
-    all_rows  = []
+    # load existing results if they exist
+    output_path = PROCESSED_DIR / "entropy_features.csv"
+    if output_path.exists():
+        existing = pd.read_csv(output_path)
+        existing_ids = set(existing['patch_id'].values)
+        print(f"Found {len(existing)} existing — skipping")
+        all_rows = existing.to_dict('records')
+    else:
+        existing_ids = set()
+        all_rows = []
+
     discarded = 0
 
     for city in CITIES:
         city_patches = patches[patches['code'] == city['code']]
 
+        # skip already computed patches
+        city_patches = city_patches[
+            ~city_patches['patch_id'].isin(existing_ids)
+        ]
+
         if len(city_patches) == 0:
+            print(f"{city['name']} — already done, skipping")
             continue
 
         print(f"Processing {city['name']} "
               f"— {len(city_patches)} patches...")
 
-        # load cached city graph — bearings already added
+        # load cached city graph
         graph_file = RAW_DIR / f"{city['code']}.graphml"
         if not graph_file.exists():
             print(f"  graph not found — skipping")
@@ -152,7 +168,6 @@ def main():
                            total=len(city_patches),
                            desc=f"  {city['code']}"):
 
-            # extract patch subgraph
             G_patch = get_patch_subgraph(
                 G, row['lat'], row['lon'], PATCH_SIZE_M
             )
@@ -162,7 +177,6 @@ def main():
                 discarded += 1
                 continue
 
-            # compute entropy
             entropy_feats = compute_entropy(
                 G_patch, num_bins=N_BEARING_BINS
             )
@@ -186,12 +200,16 @@ def main():
         print(f"  valid: {city_valid} · "
               f"discarded: {city_discarded}\n")
 
-    # save
+        # save after each city
+        df = pd.DataFrame(all_rows)
+        df.to_csv(output_path, index=False)
+        print(f"  progress saved — {len(df)} total patches so far")
+
+    # final save
     df = pd.DataFrame(all_rows)
-    output_path = PROCESSED_DIR / "entropy_features.csv"
     df.to_csv(output_path, index=False)
 
-    print(f"Total valid: {len(df)}")
+    print(f"\nTotal valid: {len(df)}")
     print(f"Total discarded: {discarded}")
     print(f"Saved to {output_path}")
     print("\nEntropy distribution:")
@@ -200,3 +218,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

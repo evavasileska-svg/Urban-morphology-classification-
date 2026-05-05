@@ -202,18 +202,32 @@ def main():
     graph_path = PROCESSED_DIR / "graph_features.csv"
     if not graph_path.exists():
         print("graph_features.csv not found.")
-        print("Run 03_compute_graph_features.py first.")
         return
 
     patches = pd.read_csv(graph_path)
     print(f"Loaded {len(patches)} valid patches\n")
 
-    all_rows = []
+    # load existing results if they exist
+    output_path = PROCESSED_DIR / "building_features.csv"
+    if output_path.exists():
+        existing = pd.read_csv(output_path)
+        existing_ids = set(existing['patch_id'].values)
+        print(f"Found {len(existing)} existing — skipping")
+        all_rows = existing.to_dict('records')
+    else:
+        existing_ids = set()
+        all_rows = []
 
     for city in CITIES:
         city_patches = patches[patches['code'] == city['code']]
 
+        # skip already computed patches
+        city_patches = city_patches[
+            ~city_patches['patch_id'].isin(existing_ids)
+        ]
+
         if len(city_patches) == 0:
+            print(f"{city['name']} — already done, skipping")
             continue
 
         print(f"\nProcessing {city['name']} "
@@ -223,7 +237,6 @@ def main():
         buildings_gdf  = download_city_buildings(city['name'])
         open_space_gdf = download_city_open_space(city['name'])
 
-        # patch area in m² — same for all patches in this city
         patch_area_m2 = get_patch_area_m2(
             city['lat'], PATCH_SIZE_M
         )
@@ -236,7 +249,6 @@ def main():
                 row['lat'], row['lon'], PATCH_SIZE_M
             )
 
-            # compute features — all local, no API calls
             building_feats = compute_building_features(
                 buildings_gdf, patch_polygon, patch_area_m2
             )
@@ -255,11 +267,13 @@ def main():
             result.update(public_feats)
             all_rows.append(result)
 
-        print(f"  {city['code']} done")
+        # save after each city
+        df = pd.DataFrame(all_rows)
+        df.to_csv(output_path, index=False)
+        print(f"  saved — {len(df)} total patches so far")
 
-    # save
+    # final save
     df = pd.DataFrame(all_rows)
-    output_path = PROCESSED_DIR / "building_features.csv"
     df.to_csv(output_path, index=False)
 
     print(f"\nTotal patches: {len(df)}")

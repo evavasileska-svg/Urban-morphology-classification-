@@ -329,18 +329,32 @@ def main():
     graph_path = PROCESSED_DIR / "graph_features.csv"
     if not graph_path.exists():
         print("graph_features.csv not found.")
-        print("Run 03_compute_graph_features.py first.")
         return
 
     patches = pd.read_csv(graph_path)
     print(f"Loaded {len(patches)} valid patches\n")
 
-    all_rows = []
+    # load existing results if they exist
+    output_path = PROCESSED_DIR / "terrain_poi_features.csv"
+    if output_path.exists():
+        existing = pd.read_csv(output_path)
+        existing_ids = set(existing['patch_id'].values)
+        print(f"Found {len(existing)} existing — skipping")
+        all_rows = existing.to_dict('records')
+    else:
+        existing_ids = set()
+        all_rows = []
 
     for city in CITIES:
         city_patches = patches[patches['code'] == city['code']]
 
+        # skip already computed patches
+        city_patches = city_patches[
+            ~city_patches['patch_id'].isin(existing_ids)
+        ]
+
         if len(city_patches) == 0:
+            print(f"{city['name']} — already done, skipping")
             continue
 
         print(f"\nProcessing {city['name']} "
@@ -349,13 +363,13 @@ def main():
         # load cached city graph to get bounding box
         graph_file = RAW_DIR / f"{city['code']}.graphml"
         if not graph_file.exists():
-            print(f"  graph not found — skipping {city['code']}")
+            print(f"  graph not found — skipping")
             continue
 
         G = ox.load_graphml(graph_file)
         north, south, east, west = get_city_bbox(G)
 
-        # download SRTM once per city — saves to data/raw/
+        # download SRTM once per city
         srtm_path = download_city_srtm(
             city['code'], north, south, east, west,
             OPENTOPO_API_KEY
@@ -364,7 +378,6 @@ def main():
         # download POIs once per city
         pois_gdf = download_city_pois(city['name'])
 
-        # process each patch
         for _, row in tqdm(city_patches.iterrows(),
                            total=len(city_patches),
                            desc=f"  {city['code']}"):
@@ -373,12 +386,10 @@ def main():
                 row['lat'], row['lon'], PATCH_SIZE_M
             )
 
-            # terrain — reads from local file, no API call
             terrain_feats = sample_terrain_for_patch(
                 srtm_path, row['lat'], row['lon'], PATCH_SIZE_M
             )
 
-            # POI diversity — local clip, no API call
             poi_feats = compute_poi_features(
                 pois_gdf, patch_polygon, PATCH_SIZE_M
             )
@@ -394,12 +405,19 @@ def main():
             result.update(poi_feats)
             all_rows.append(result)
 
-        print(f"  {city['code']} done")
+        # save after each city
+        df = pd.DataFrame(all_rows)
+        df.to_csv(output_path, index=False)
+        print(f"  saved — {len(df)} total patches so far")
 
-    # save
+    # final save
     df = pd.DataFrame(all_rows)
-    output_path = PROCESSED_DIR / "terrain_poi_features.csv"
     df.to_csv(output_path, index=False)
+
+    print(f"\nTotal patches: {len(df)}")
+    print(f"Saved to {output_path}")
+    print(df[['mean_slope_deg', 'poi_count',
+              'functional_entropy']].describe())
 
 
 if __name__ == "__main__":

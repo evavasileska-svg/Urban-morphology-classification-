@@ -41,6 +41,8 @@ UA_EXCLUDE = [11240, 11300, 11400]
 ##Section 4 — City list
 
 CITIES = [
+    # ── original 8 ───────────────────────────────────────────────
+
     {
         "name":   "Vienna, Austria",
         "code":   "vienna",
@@ -89,4 +91,127 @@ CITIES = [
         "lat":    56.9460,
         "lon":    24.1059,
     },
+
+    # ── new cities — class 0 historic dense ──────────────────────
+
+    {
+        "name":   "Tallinn, Estonia",
+        "code":   "tallinn",
+        "lat":    59.4370,
+        "lon":    24.7536,
+    },
+    {
+        "name":   "Bologna, Italy",
+        "code":   "bologna",
+        "lat":    44.4949,
+        "lon":    11.3426,
+    },
+    {
+        "name":   "Ghent, Belgium",
+        "code":   "ghent",
+        "lat":    51.0543,
+        "lon":     3.7174,
+    },
+
+    # ── new cities — class 1 planned grid ────────────────────────
+
+    {
+        "name":   "Budapest, Hungary",
+        "code":   "budapest",
+        "lat":    47.4979,
+        "lon":    19.0402,
+    },
+    {
+        "name":   "Turin, Italy",
+        "code":   "turin",
+        "lat":    45.0703,
+        "lon":     7.6869,
+    },
+    {
+        "name":   "Thessaloniki, Greece",
+        "code":   "thessaloniki",
+        "lat":    40.6401,
+        "lon":    22.9444,
+    },
+    {
+        "name":   "Brussels, Belgium",
+        "code":   "brussels",
+        "lat":    50.8503,
+        "lon":     4.3517,
+    },
+    {
+        "name":   "Lisbon, Portugal",
+        "code":   "lisbon",
+        "lat":    38.7169,
+        "lon":    -9.1395,
+    },
+
+    # ── new cities — class 2 socialist modernist ─────────────────
+
+    {
+        "name":   "Bucharest, Romania",
+        "code":   "bucharest",
+        "lat":    44.4268,
+        "lon":    26.1025,
+    },
+    {
+        "name":   "Sofia, Bulgaria",
+        "code":   "sofia",
+        "lat":    42.6977,
+        "lon":    23.3219,
+    },
+    {
+        "name":   "Vilnius, Lithuania",
+        "code":   "vilnius",
+        "lat":    54.6872,
+        "lon":    25.2797,
+    },
+    {
+        "name":   "Bratislava, Slovakia",
+        "code":   "bratislava",
+        "lat":    48.1486,
+        "lon":    17.1077,
+    },
+
+    # ── new cities — class 3 suburban low density ─────────────────
+
+    {
+        "name":   "Dublin, Ireland",
+        "code":   "dublin",
+        "lat":    53.3498,
+        "lon":    -6.2603,
+    },
+    {
+        "name":   "Helsinki, Finland",
+        "code":   "helsinki",
+        "lat":    60.1699,
+        "lon":    24.9384,
+    },
+    {
+        "name":   "Stockholm, Sweden",
+        "code":   "stockholm",
+        "lat":    59.3293,
+        "lon":    18.0686,
+    },
+    {
+        "name":   "Rotterdam, Netherlands",
+        "code":   "rotterdam",
+        "lat":    51.9244,
+        "lon":     4.4777,
+    },
+
+    # ── new cities — geographic diversity ────────────────────────
+
+    {
+        "name":   "Tel Aviv-Yafo, Israel",
+        "code":   "telaviv",
+        "lat":    32.0853,
+        "lon":    34.7818,
+    },
+    {
+    "name":   "Marrakesh, Morocco",
+    "code":   "marrakesh",
+    "lat":    31.6295,
+    "lon":    -7.9811,
+},
 ]
