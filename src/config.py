@@ -21,7 +21,7 @@ RESULTS_DIR       = ROOT / "results"
 
 PATCH_SIZE_M      = 500    # geographic size of each patch in metres
 GRID_STEP_M       = 250    # spacing between patch centres (50% overlap)
-MIN_SEGMENTS      = 30     # minimum street segments for a valid patch
+MIN_SEGMENTS      = 15     # minimum street segments for a valid patch
 N_CIRCUITY_PAIRS  = 150    # OD pairs sampled for circuity computation
 N_BEARING_BINS    = 36     # bins for entropy histogram
 MIN_COVERAGE      = 0.50   # minimum UA class coverage to accept a label
@@ -216,6 +216,44 @@ CITIES = [
     "lat":    31.6295,
     "lon":    -7.9811,
 },
+# ── extra cities for class 2 and class 3 ─────────────────────
+
+    {
+        "name":   "Birmingham, United Kingdom",
+        "code":   "birmingham",
+        "lat":    52.4862,
+        "lon":    -1.8904,
+    },
+    {
+        "name":   "Leeds, United Kingdom",
+        "code":   "leeds",
+        "lat":    53.8008,
+        "lon":    -1.5491,
+    },
+    {
+        "name":   "Cologne, Germany",
+        "code":   "cologne",
+        "lat":    50.9333,
+        "lon":     6.9500,
+    },
+    {
+        "name":   "Munich, Germany",
+        "code":   "munich",
+        "lat":    48.1351,
+        "lon":    11.5820,
+    },
+    {
+        "name":   "Kyiv, Ukraine",
+        "code":   "kyiv",
+        "lat":    50.4501,
+        "lon":    30.5234,
+    },
+    {
+        "name":   "Minsk, Belarus",
+        "code":   "minsk",
+        "lat":    53.9045,
+        "lon":    27.5615,
+    },
 ]
 MIN_COVERAGE = 0.60
 
@@ -223,7 +261,6 @@ UA_CLASS_MAP = {
     11100: {"label": 0, "name": "continuous_urban"},
     11210: {"label": 1, "name": "dense_urban"},
     11220: {"label": 2, "name": "medium_density"},
-    11230: {"label": 3, "name": "low_density"},
 }
 
-UA_EXCLUDE = [11240, 11300, 11400]
+UA_EXCLUDE = [11230, 11240, 11300, 11400]
