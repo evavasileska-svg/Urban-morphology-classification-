@@ -1,5 +1,6 @@
 # python environment
-daenen/
+.venv/
+venv/
 __pycache__/
 *.pyc
 *.pyo
@@ -7,11 +8,12 @@ __pycache__/
 
 # data — raw graphs are large binary files
 data/raw/
+data/raw_global/
 data/urban_atlas/
 
 # processed data — regeneratable from scripts
 data/processed/
-
+data/processed_global/
 cache/
 
 # results — regeneratable
