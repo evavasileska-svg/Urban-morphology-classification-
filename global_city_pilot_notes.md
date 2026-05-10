@@ -4,7 +4,7 @@
 
 Test extra OpenStreetMap data from African, Asian, and American cities.
 
-This is a separate comparison dataset.
+This is a separate global comparison dataset.
 
 It should not overwrite the main European Urban Atlas dataset.
 
@@ -33,27 +33,14 @@ Do not edit or overwrite the main processed files:
 - `data/processed/entropy_features.csv`
 - `data/processed/dataset_assembled.csv`
 
-Use separate global filenames instead.
+Use separate global folders:
 
----
-
-## New global files to create
-
-Planned files:
-
-- `src/config_global.py`
 - `data/raw_global/`
 - `data/processed_global/`
-- `data/processed_global/patch_centres_global.csv`
-- `data/processed_global/graph_features_global.csv`
-- `data/processed_global/building_features_global.csv`
-- `data/processed_global/terrain_poi_features_global.csv`
-- `data/processed_global/entropy_features_global.csv`
-- `data/processed_global/dataset_global_assembled.csv`
 
 ---
 
-## Dataset logic
+## Dataset role
 
 Main European dataset:
 
@@ -71,8 +58,6 @@ Global OSM dataset:
 ---
 
 ## Pilot cities
-
-Start small before scaling.
 
 Africa:
 
@@ -101,32 +86,315 @@ Grid step:
 
 `250m`
 
-Maximum pilot patches per city:
+Original full patch count:
 
-`100`
+`9,000`
 
-Reason:
+Balanced pilot sample:
 
-Avoid one large city dominating the dataset.
+`600 patches`
+
+Sampling rule:
+
+`100 patches per city`
 
 ---
 
-## Columns to add later
+## Files created
 
-Useful metadata columns:
+Scripts:
+
+- `src/config_global.py`
+- `src/01_download_cities_global.py`
+- `src/02_generate_patches_global.py`
+- `src/03_compute_graph_features_global.py`
+- `src/04_compute_building_features_global.py`
+- `src/05_compute_terrain_poi_features_global.py`
+- `src/06_compute_entropy_global.py`
+- `src/07_assemble_dataset_global.py`
+
+Outputs:
+
+- `data/raw_global/*.graphml`
+- `data/raw_global/*_srtm.tif`
+- `data/processed_global/patch_centres_global_full.csv`
+- `data/processed_global/patch_centres.csv`
+- `data/processed_global/graph_features.csv`
+- `data/processed_global/building_features.csv`
+- `data/processed_global/terrain_poi_features.csv`
+- `data/processed_global/entropy_features.csv`
+- `data/processed_global/dataset_global_assembled.csv`
+
+Backups:
+
+- `data/processed_global/graph_features_directed_backup.csv`
+- `data/processed_global/building_features_place_boundary_backup.csv`
+
+---
+
+## Important fixes made
+
+### 1. Tokyo download was too large
+
+Issue:
+
+Tokyo full-place download triggered hundreds of Overpass subqueries.
+
+Fix:
+
+Changed global city downloads to radius-based extraction.
+
+Method:
+
+`ox.graph_from_point()`
+
+Radius:
+
+`5000m`
+
+Reason:
+
+This makes global cities comparable and avoids huge downloads.
+
+---
+
+### 2. Graph features used directed degree
+
+Issue:
+
+First graph run gave:
+
+- `dead_end_ratio = 0`
+- `proportion_3way = 0`
+
+This was suspicious.
+
+Likely cause:
+
+OSMnx street graphs are directed.
+
+Fix:
+
+Used undirected graph logic and OSMnx street counts.
+
+Reason:
+
+Street morphology should count physical connections, not travel directions.
+
+---
+
+### 3. Building extraction failed first
+
+Issue:
+
+First building run produced:
+
+`405 zero-building patches / 436`
+
+This was not plausible.
+
+Likely cause:
+
+Street graphs used radius extraction, but buildings used place-boundary extraction.
+
+Fix:
+
+Changed building and open-space extraction to use:
+
+`ox.features_from_point()`
+
+with the same 5000m radius.
+
+Result:
+
+Zero-building patches reduced to:
+
+`21 / 436`
+
+---
+
+### 4. Terrain failed first
+
+Issue:
+
+All terrain values were missing.
+
+Cause:
+
+OpenTopography API key was missing.
+
+Fix:
+
+Added `OPENTOPO_API_KEY` to `.env`.
+
+Result:
+
+Terrain now works.
+
+Missing terrain values:
+
+`0`
+
+---
+
+## Final dataset checkpoint
+
+Output:
+
+`data/processed_global/dataset_global_assembled.csv`
+
+Rows:
+
+`436`
+
+Columns:
+
+`50`
+
+Missing values:
+
+`0`
+
+Bad entropy rows:
+
+`0`
+
+Zero-building patches:
+
+`21`
+
+Zero-POI patches:
+
+`50`
+
+Decision:
+
+Pause extraction here.
+
+Reason:
+
+The global pilot is clean enough for EDA and comparison.
+
+---
+
+## Valid graph patches by city
+
+- Bangkok: 53
+- Cairo: 72
+- Marrakesh: 41
+- Mexico City: 91
+- New York: 83
+- Tokyo: 96
+
+Total valid graph patches:
+
+`436`
+
+Discarded patches:
+
+`164`
+
+---
+
+## Building feature status
+
+Building extraction is now usable.
+
+City averages:
+
+- Bangkok: medium building coverage
+- Cairo: lower coverage, some zero-building patches
+- Marrakesh: compact but lower coverage
+- Mexico City: medium-high coverage
+- New York: high building coverage
+- Tokyo: high building count
+
+Known warning:
+
+Cairo has the highest number of zero-building patches.
+
+---
+
+## POI feature status
+
+POI extraction is usable.
+
+Known warning:
+
+`50 zero-POI patches`
+
+Main issue:
+
+Cairo has many zero-POI patches.
+
+Interpretation:
+
+This may reflect OSM POI incompleteness, not real lack of activity.
+
+---
+
+## Terrain feature status
+
+Terrain now works.
+
+Missing terrain values:
+
+`0`
+
+Mean slope by city:
+
+- Bangkok: around 4.42°
+- Cairo: around 5.52°
+- Marrakesh: around 2.30°
+- Mexico City: around 3.11°
+- New York: around 4.68°
+- Tokyo: around 3.67°
+
+---
+
+## Entropy feature status
+
+Entropy rows:
+
+`436`
+
+Bad entropy rows:
+
+`0`
+
+Entropy range:
+
+- minimum: around 0.18
+- maximum: around 0.96
+
+City reading:
+
+- New York: lower entropy, stronger grid
+- Mexico City: lower entropy, more directional order
+- Tokyo: higher entropy, more directional diversity
+- Bangkok: higher entropy, mixed directions
+- Cairo: higher entropy, mixed directions
+- Marrakesh: higher entropy, organic pattern
+
+---
+
+## Dataset columns added for global comparison
+
+Metadata columns:
 
 - `patch_id`
 - `city`
-- `country`
-- `continent`
+- `code`
 - `lat`
 - `lon`
+- `country`
+- `continent`
 - `dataset_scope`
 - `has_urban_atlas_label`
 - `semantic_tag`
 - `semantic_tag_confidence`
 
-Default values for global patches:
+Default global metadata:
 
 - `dataset_scope = global_comparison`
 - `has_urban_atlas_label = false`
@@ -135,122 +403,17 @@ Default values for global patches:
 
 ---
 
-## First pipeline steps
+## Current status checklist
 
-Step 1:
-
-Create `config_global.py`.
-
-Step 2:
-
-Download global city street graphs.
-
-Step 3:
-
-Generate global patch centers.
-
-Step 4:
-
-Limit patches per city.
-
-Step 5:
-
-Compute graph features only.
-
-Step 6:
-
-Check valid and discarded patches.
-
-Step 7:
-
-Only then compute buildings, POIs, terrain, and entropy.
-
----
-
-## Quality checks
-
-For each city, check:
-
-- number of generated patches
-- number of valid graph patches
-- number of discarded patches
-- average intersection density
-- average dead-end ratio
-- average building count
-- number of patches with zero buildings
-- average POI count
-- missing terrain values
-
----
-
-## Risks
-
-Risk:
-
-Global cities overwrite team CSVs.
-
-Fix:
-
-Use `_global` filenames.
-
-Risk:
-
-Global cities get mixed with Urban Atlas labels.
-
-Fix:
-
-Use `has_urban_atlas_label = false`.
-
-Risk:
-
-Large cities dominate the dataset.
-
-Fix:
-
-Limit patch count per city.
-
-Risk:
-
-OSM data is incomplete.
-
-Fix:
-
-Add quality columns and report missing data.
-
----
-
-## Team message
-
-Message sent to team:
-
-“I’m testing extra OSM data from African, Asian, and American cities. I’ll keep this separate from the main European Urban Atlas dataset. I’m working on a separate branch called `eduardo-global-osm-cities`, and I’ll save outputs with `_global` names so I don’t overwrite shared files.”
-
----
-
-## Current status
-
-- [ ] Pulled latest repo
-- [ ] Created branch
-- [ ] Created notes file
-- [ ] Created `config_global.py`
-- [ ] Created global data folders
-- [ ] Added pilot cities
-- [ ] Downloaded global city graphs
-- [ ] Generated global patch centers
-- [ ] Computed graph features
-- [ ] Checked patch quality
-- [ ] Reported results to team
-
----
-
-## Notes
-
-Write problems, decisions, and changes here.
-
-Date:
-
-Decision:
-
-Reason:
-
-Next action:
+- [x] Pulled latest repo
+- [x] Created separate global branch
+- [x] Created global notes file
+- [x] Created `config_global.py`
+- [x] Created global data folders
+- [x] Added 6 pilot cities
+- [x] Downloaded global city graphs
+- [x] Generated full global patch centers
+- [x] Created balanced 600-patch sample
+- [x] Added global metadata columns
+- [x] Computed corrected graph features
+- [x]
