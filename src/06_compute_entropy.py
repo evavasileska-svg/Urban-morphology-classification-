@@ -38,73 +38,81 @@ def get_patch_subgraph(G, centre_lat, centre_lon, patch_size_m):
 def compute_entropy(G, num_bins=36):
     """
     Compute Shannon entropy of street bearing distribution.
-    Follows Boeing (2019):
-    - undirected bearings (% 180)
-    - minus 5 degree bin shift
-    - length weighted histogram
-    - normalised by log(num_bins)
+    Follows Boeing (2019) exactly.
     """
-    bearings = []
-    lengths  = []
+    bearings_list = []
+    lengths_list  = []
 
     for u, v, data in G.edges(data=True):
         b = data.get('bearing', None)
         l = data.get('length', None)
         if b is not None and l is not None and l > 0:
-            bearings.append(b)
-            lengths.append(l)
+            # add bearing and its reciprocal
+            b_reciprocal = (b + 180) % 360
+            bearings_list.append(b)
+            bearings_list.append(b_reciprocal)
+            lengths_list.append(l)
+            lengths_list.append(l)
 
-    if len(bearings) < 10:
+    if len(bearings_list) < 10:
         return None
 
-    bearings = np.array(bearings)
-    lengths  = np.array(lengths)
+    bearings = np.array(bearings_list)
+    lengths  = np.array(lengths_list)
 
-    # step 1 — collapse to undirected 0 to 180
-    bearings_undirected = bearings % 180
+    # Boeing: 36 bins of 10 degrees, shifted by -5
+    # so bin edges are at -5, 5, 15 ... 355, 365
+    # bearings between 355 and 360 wrap into first bin
+    # apply shift: subtract 5 then mod 360
+    bearings_shifted = (bearings - 5) % 360
 
-    # step 2 — Boeing minus 5 degree shift
-    # prevents streets at 0 and 90 degrees sitting on bin edges
-    bearings_shifted = (bearings_undirected - 5) % 180
+    # now bin from 0 to 360 in 36 equal bins
+    bin_edges = np.linspace(0, 360, num_bins + 1)
 
-    # step 3 — length weighted histogram
-    bin_edges = np.linspace(0, 180, num_bins + 1)
-    counts, _ = np.histogram(
-        bearings_shifted,
-        bins=bin_edges,
-        weights=lengths
+    # ── unweighted Ho ────────────────────────────────────────────
+    counts_uw, _ = np.histogram(bearings_shifted, bins=bin_edges)
+    total_uw = counts_uw.sum()
+    if total_uw == 0:
+        return None
+    prop_uw = counts_uw / total_uw
+    prop_uw_nz = prop_uw[prop_uw > 0]
+    Ho = -np.sum(prop_uw_nz * np.log(prop_uw_nz))
+
+    # ── weighted Hw ──────────────────────────────────────────────
+    counts_w, _ = np.histogram(
+        bearings_shifted, bins=bin_edges, weights=lengths
     )
-
-    # step 4 — proportions
-    total = counts.sum()
-    if total == 0:
+    total_w = counts_w.sum()
+    if total_w == 0:
         return None
-    proportions = counts / total
+    prop_w = counts_w / total_w
+    prop_w_nz = prop_w[prop_w > 0]
+    Hw = -np.sum(prop_w_nz * np.log(prop_w_nz))
 
-    # step 5 — Shannon entropy
-    proportions_nz = proportions[proportions > 0]
-    H = -np.sum(proportions_nz * np.log(proportions_nz))
+    # ── normalise ────────────────────────────────────────────────
+    H_max         = np.log(num_bins)   # 3.584 nats
+    Ho_normalised = Ho / H_max
+    Hw_normalised = Hw / H_max
 
-    # step 6 — normalise to 0-1
-    H_max        = np.log(num_bins)
-    H_normalised = H / H_max
+    # ── orientation-order phi (Boeing eq. 3) ─────────────────────
+    Hg  = np.log(4)   # 1.386 nats — perfect four-way grid
+    phi = 1 - ((Ho - Hg) / (H_max - Hg)) ** 2
+    phi = float(max(0.0, min(1.0, phi)))
 
-    # also store the dominant bearing — direction most streets point
-    dominant_bin  = np.argmax(counts)
-    dominant_bearing = bin_edges[dominant_bin] + 5  # undo shift
-
-    # number of bins with more than 5% of streets
-    # low number = strong dominant direction (grid)
-    # high number = many directions (organic)
-    n_dominant_peaks = int((proportions > 0.05).sum())
+    # ── additional descriptors ───────────────────────────────────
+    dominant_bin     = int(np.argmax(counts_uw))
+    dominant_bearing = (dominant_bin * 10 + 5) % 360
+    n_dominant_peaks = int((prop_uw > 0.05).sum())
 
     return {
-        'entropy_raw':        round(H, 6),
-        'entropy_normalised': round(H_normalised, 6),
-        'dominant_bearing':   round(dominant_bearing, 2),
-        'n_dominant_peaks':   n_dominant_peaks,
+        'entropy_raw':           round(Ho, 6),
+        'entropy_normalised':    round(Ho_normalised, 6),
+        'entropy_weighted_raw':  round(Hw, 6),
+        'entropy_weighted_norm': round(Hw_normalised, 6),
+        'orientation_order_phi': round(phi, 6),
+        'dominant_bearing':      round(float(dominant_bearing), 2),
+        'n_dominant_peaks':      n_dominant_peaks,
     }
-
 
 def main():
     PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
@@ -218,4 +226,28 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# export entropy-only CSV — clean standalone output
+    entropy_cols = [
+        'patch_id', 'city', 'code', 'lat', 'lon',
+        'entropy_raw',
+        'entropy_normalised',
+        'entropy_weighted_raw',
+        'entropy_weighted_norm',
+        'orientation_order_phi',
+        'dominant_bearing',
+        'n_dominant_peaks',
+    ]
+
+    # keep only columns that exist in the dataframe
+    entropy_cols_present = [c for c in entropy_cols 
+                            if c in df.columns]
+
+    entropy_export = df[entropy_cols_present].copy()
+    entropy_export_path = PROCESSED_DIR / "entropy_boeing.csv"
+    entropy_export.to_csv(entropy_export_path, index=False)
+
+    print(f"\nEntropy-only CSV saved to {entropy_export_path}")
+    print(f"Columns: {entropy_cols_present}")
+    print(f"Rows: {len(entropy_export)}")
 
