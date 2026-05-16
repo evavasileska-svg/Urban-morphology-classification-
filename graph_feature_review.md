@@ -91,22 +91,38 @@ For example, Tokyo has 1,558 valid patches, while Sarajevo has only 476.
 4. Should graph features be analyzed before terrain and building features?
 5. Which graph features are most relevant to entropy?
 6. Should we add orientation-specific features, such as deviation from orthogonality?
-## Graph feature file quality check
 
-The graph_features.csv file contains 8,440 valid patches and 20 columns.
+## Balanced graph dataset
 
-All expected graph-feature columns are present.
+A balanced graph-feature dataset was created from graph_features.csv.
 
-No obvious missing columns were found.
+The smallest valid city group was Sarajevo with 476 patches.
 
-The dataset is usable for EDA.
+We sampled 476 patches from each city.
 
-However, the valid patch count is not balanced by city.
+Balanced dataset size:
 
-Tokyo has 1,558 valid patches, while Sarajevo has 476.
+**3,808 patches**
 
-This may bias the model toward cities with more valid patches.
+Balanced patch count by city:
 
-A balanced dataset could use 476 patches per city.
+| City | Patches |
+|---|---:|
+| Barcelona | 476 |
+| Chicago | 476 |
+| Lisbon | 476 |
+| London | 476 |
+| Manhattan | 476 |
+| Paris | 476 |
+| Sarajevo | 476 |
+| Tokyo | 476 |
 
-This would create 3,808 samples across 8 cities.
+Output file:
+
+**data/processed_global/graph_features_city_balanced.csv**
+
+Reason:
+
+The original graph feature dataset was unbalanced by city.
+
+Balancing reduces the risk that cities with more valid patches dominate the EDA or model.
