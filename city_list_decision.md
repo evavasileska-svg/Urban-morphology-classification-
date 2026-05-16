@@ -215,3 +215,29 @@ We use city-level plots to check whether the patch logic makes sense.
 ## One-line explanation
 
 We selected cities by **urban condition**, not only geography, to test whether street-network entropy can be predicted across grid, irregular, hilly, dense, and mixed urban fabrics.
+
+
+## Pilot download and patch generation result
+
+The 8-city pilot graph download was successful.
+
+The script downloaded 5 km walking-network graphs around each city center.
+
+Patch centres were generated using 500m grid spacing.
+
+Total patch centres generated: 11,784.
+
+Patch count by city:
+
+| City | Patch centres |
+|---|---:|
+| Barcelona | 1,600 |
+| Paris | 1,600 |
+| London | 1,600 |
+| Lisbon | 1,184 |
+| Sarajevo | 1,600 |
+| Manhattan | 1,360 |
+| Chicago | 1,240 |
+| Tokyo | 1,600 |
+
+Important note: this is a pilot based on 5 km radius graph downloads, not full administrative city boundaries.
