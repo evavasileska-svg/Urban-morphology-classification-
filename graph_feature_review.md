@@ -91,3 +91,22 @@ For example, Tokyo has 1,558 valid patches, while Sarajevo has only 476.
 4. Should graph features be analyzed before terrain and building features?
 5. Which graph features are most relevant to entropy?
 6. Should we add orientation-specific features, such as deviation from orthogonality?
+## Graph feature file quality check
+
+The graph_features.csv file contains 8,440 valid patches and 20 columns.
+
+All expected graph-feature columns are present.
+
+No obvious missing columns were found.
+
+The dataset is usable for EDA.
+
+However, the valid patch count is not balanced by city.
+
+Tokyo has 1,558 valid patches, while Sarajevo has 476.
+
+This may bias the model toward cities with more valid patches.
+
+A balanced dataset could use 476 patches per city.
+
+This would create 3,808 samples across 8 cities.
